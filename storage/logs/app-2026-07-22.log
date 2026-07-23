@@ -1,0 +1,12 @@
+{"time":"2026-07-22T09:56:32+00:00","level":"ERROR","message":"Enter a valid stock symbol.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T12:20:34+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T12:20:36+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T13:28:47+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T13:28:48+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T13:28:49+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T13:28:49+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T13:28:51+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T13:28:59+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T13:28:59+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T13:29:00+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
+{"time":"2026-07-22T13:29:02+00:00","level":"ERROR","message":"The available quote is too stale for a simulated trade.","context":{"type":"InvalidArgumentException"}}
