@@ -1,0 +1,112 @@
+{
+  "id": "PTradeAIChatSmoke01",
+  "name": "TEST – PaperTrade AI Chatbot grounding",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "smoke-trigger",
+      "name": "Run smoke test",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [0, 0]
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ json: { question: 'How is NVIDIA doing, what does WATCH mean, and should I buy it?', factual_answer: 'STOCK QUESTION - NVDA\\nNVIDIA CORPORATION\\n\\nCurrent price: 123.45 USD\\nSession change: -1.25%\\nMarket: open\\nProvider: finnhub\\nUpdated: 2026-07-23T14:15:00Z\\n\\nEstimate: WATCH\\nEstimated chance up: 54.0% over 7d\\nConfidence: 62.0%\\nRisk: Medium\\nReason: Momentum is mixed and uncertainty remains elevated.\\n\\nEducational simulation only. This is not financial advice.' } }];"
+      },
+      "id": "smoke-fixture",
+      "name": "Provide verified fixture",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 0]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ 'USER MESSAGE:\\n' + $json.question + '\\n\\nAUTHORITATIVE PAPERTRADE MARKET CONTEXT:\\n' + $json.factual_answer }}",
+        "hasOutputParser": false,
+        "needsFallback": false,
+        "options": {
+          "systemMessage": "You are PaperTrade AI, a friendly educational stock-market chatbot replying inside Telegram. Answer the user's actual question naturally and remember earlier messages in this Telegram chat for follow-up questions. The AUTHORITATIVE PAPERTRADE MARKET CONTEXT supplied in each prompt is the only source of truth for current prices, price changes, provider timestamps, symbols, predictions, probabilities, confidence, risk, and prediction reasons. Never invent, alter, extrapolate, or replace those factual values. If the context says a quote or estimate is unavailable, say it is unavailable. Explain market terms in plain language. Never tell the user to buy or sell; state that this is simulated educational information, not financial advice. Keep the reply concise and easy to read on a phone.",
+          "maxIterations": 3,
+          "enableStreaming": false
+        }
+      },
+      "id": "smoke-agent",
+      "name": "AI Stock Chatbot",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [460, 0]
+    },
+    {
+      "parameters": {
+        "model": "openrouter/free",
+        "options": {
+          "temperature": 0.2,
+          "maxTokens": 600,
+          "timeout": 120000,
+          "maxRetries": 2
+        }
+      },
+      "id": "smoke-model",
+      "name": "OpenRouter Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenRouter",
+      "typeVersion": 1,
+      "position": [400, 220],
+      "credentials": {
+        "openRouterApi": {
+          "id": "84c71a63-eef2-4adf-a89b-c3a7a35fd063",
+          "name": "PaperTrade OpenRouter"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "papertrade-ai-grounding-smoke-20260723",
+        "contextWindowLength": 4
+      },
+      "id": "smoke-memory",
+      "name": "Telegram Chat Memory",
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.4,
+      "position": [600, 220]
+    },
+    {
+      "parameters": {
+        "jsCode": "const reply = String($json.output || ''); const normalized = reply.normalize('NFKC').replace(/[\\u2010-\\u2015\\u2212\\uFE63\\uFF0D]/g, '-').replace(/\\s/g, ' '); const checks = { hasReply: reply.length > 40, hasSymbol: /\\bNVDA\\b/i.test(normalized), hasExactPrice: /123[.,]45/.test(normalized), hasExactChange: /-1[.,]25\\s*%/.test(normalized), explainsWatch: /WATCH/i.test(normalized), hasSafetyLanguage: /(not financial advice|educational|simulat)/i.test(normalized) }; const failed = Object.entries(checks).filter(([, ok]) => !ok).map(([name]) => name); if (failed.length) throw new Error('AI grounding smoke failed: ' + failed.join(', ') + '\\nReply: ' + reply); return [{ json: { pass: true, checks, reply } }];"
+      },
+      "id": "smoke-validator",
+      "name": "Verify grounded reply",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 0]
+    }
+  ],
+  "connections": {
+    "Run smoke test": {
+      "main": [[{"node": "Provide verified fixture", "type": "main", "index": 0}]]
+    },
+    "Provide verified fixture": {
+      "main": [[{"node": "AI Stock Chatbot", "type": "main", "index": 0}]]
+    },
+    "AI Stock Chatbot": {
+      "main": [[{"node": "Verify grounded reply", "type": "main", "index": 0}]]
+    },
+    "OpenRouter Chat Model": {
+      "ai_languageModel": [[{"node": "AI Stock Chatbot", "type": "ai_languageModel", "index": 0}]]
+    },
+    "Telegram Chat Memory": {
+      "ai_memory": [[{"node": "AI Stock Chatbot", "type": "ai_memory", "index": 0}]]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "11e79707-e933-45c5-8828-020000000017",
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "tags": []
+}

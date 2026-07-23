@@ -1,0 +1,203 @@
+{
+  "updatedAt": "2026-07-23T07:30:05.402Z",
+  "createdAt": "2026-07-23T07:30:05.402Z",
+  "id": "PTradeStockQuestions01",
+  "name": "PaperTrade AI - Telegram Stock Questions",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "question-schedule",
+      "name": "Check Telegram each minute",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/telegram-stock-questions'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "poll-questions",
+      "name": "Get new stock questions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split-questions",
+      "name": "Loop questions",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chat_id}}",
+        "text": "={{$json.message}}",
+        "additionalFields": {}
+      },
+      "id": "answer-question",
+      "name": "Send stock answer",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        660,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "e80a0669-139f-42aa-bdf4-2f4160c41871",
+          "name": "PaperTrade Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/log'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ workflow_name: 'telegram-stock-questions', user_id: $('Loop questions').item.json.user_id, status: 'success', message: 'Telegram stock question answered for ' + ($('Loop questions').item.json.symbol || 'help'), execution_key: 'telegram-question-' + $('Loop questions').item.json.update_id }) }}",
+        "options": {}
+      },
+      "id": "log-question",
+      "name": "Log stock answer",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        880,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Check Telegram each minute": {
+      "main": [
+        [
+          {
+            "node": "Get new stock questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get new stock questions": {
+      "main": [
+        [
+          {
+            "node": "Loop questions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop questions": {
+      "main": [
+        [
+          {
+            "node": "Send stock answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send stock answer": {
+      "main": [
+        [
+          {
+            "node": "Log stock answer",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "Europe/Brussels"
+  },
+  "staticData": null,
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "41531b8f-8b3b-420f-a27b-2dab81541bb4",
+  "activeVersionId": null,
+  "versionCounter": 1,
+  "triggerCount": 0,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-07-23T07:30:05.421Z",
+      "createdAt": "2026-07-23T07:30:05.421Z",
+      "role": "workflow:owner",
+      "workflowId": "PTradeStockQuestions01",
+      "projectId": "CVOdAZQRphO6oJo5",
+      "project": {
+        "updatedAt": "2026-07-22T11:45:25.085Z",
+        "createdAt": "2026-07-22T11:40:28.422Z",
+        "id": "CVOdAZQRphO6oJo5",
+        "name": "NICOLAS PIERRE <n1c0laspi201014@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "6c019ce0-a1dc-4fc7-b601-b4627b42c4ef"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

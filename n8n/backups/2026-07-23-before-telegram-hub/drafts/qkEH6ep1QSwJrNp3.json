@@ -1,0 +1,161 @@
+{
+  "updatedAt": "2026-07-22T12:57:26.000Z",
+  "createdAt": "2026-07-22T11:49:14.179Z",
+  "id": "qkEH6ep1QSwJrNp3",
+  "name": "RETIRED - Prediction Refresh (disabled)",
+  "description": null,
+  "active": false,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "hours",
+              "hoursInterval": 6
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Every 6 hours",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/refresh-predictions'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={}",
+        "options": {
+          "timeout": 300000
+        }
+      },
+      "id": "refresh",
+      "name": "Refresh scoped predictions",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        250,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/log'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ workflow_name: 'prediction-refresh', status: 'success', message: 'Scoped prediction refresh completed', context: { result_count: ($json.data || []).length } }) }}",
+        "options": {}
+      },
+      "id": "log",
+      "name": "Log refresh",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        500,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Every 6 hours": {
+      "main": [
+        [
+          {
+            "node": "Refresh scoped predictions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refresh scoped predictions": {
+      "main": [
+        [
+          {
+            "node": "Log refresh",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "node:Every 6 hours": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        "hours:6"
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "af79d47e-1277-4c21-b28a-249fa8475b60",
+  "activeVersionId": null,
+  "versionCounter": 5,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-07-22T11:49:14.182Z",
+      "createdAt": "2026-07-22T11:49:14.182Z",
+      "role": "workflow:owner",
+      "workflowId": "qkEH6ep1QSwJrNp3",
+      "projectId": "CVOdAZQRphO6oJo5",
+      "project": {
+        "updatedAt": "2026-07-22T11:45:25.085Z",
+        "createdAt": "2026-07-22T11:40:28.422Z",
+        "id": "CVOdAZQRphO6oJo5",
+        "name": "NICOLAS PIERRE <n1c0laspi201014@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "6c019ce0-a1dc-4fc7-b601-b4627b42c4ef"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

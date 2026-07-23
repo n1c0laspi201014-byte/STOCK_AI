@@ -1,0 +1,258 @@
+{
+  "updatedAt": "2026-07-22T12:57:19.000Z",
+  "createdAt": "2026-07-22T11:49:14.173Z",
+  "id": "jAZsVl8TDBv5OFWS",
+  "name": "PaperTrade AI - Morning Report",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 1
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Check each minute - send once daily",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/due-morning-reports'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "due",
+      "name": "Get due users",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split",
+      "name": "Loop users",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/report-data'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ user_id: $json.user_id, type: 'morning-report' }) }}",
+        "options": {}
+      },
+      "id": "data",
+      "name": "Build report in PHP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$('Loop users').item.json.chat_id}}",
+        "text": "={{$json.data.message}}",
+        "additionalFields": {}
+      },
+      "id": "telegram",
+      "name": "Send morning report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "e80a0669-139f-42aa-bdf4-2f4160c41871",
+          "name": "PaperTrade Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/log'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ workflow_name: 'morning-report', user_id: $('Loop users').item.json.user_id, status: 'success', message: 'Daily Telegram morning report sent at the configured user time', execution_key: $('Loop users').item.json.report_date + '-' + $('Loop users').item.json.user_id }) }}",
+        "options": {}
+      },
+      "id": "log",
+      "name": "Log delivery",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Check each minute - send once daily": {
+      "main": [
+        [
+          {
+            "node": "Get due users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get due users": {
+      "main": [
+        [
+          {
+            "node": "Loop users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop users": {
+      "main": [
+        [
+          {
+            "node": "Build report in PHP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build report in PHP": {
+      "main": [
+        [
+          {
+            "node": "Send morning report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send morning report": {
+      "main": [
+        [
+          {
+            "node": "Log delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "node:Every 15 minutes": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    },
+    "node:Check each minute - send once daily": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "nodeGroups": [],
+  "pinData": {},
+  "versionId": "71542476-1857-4561-9fad-c4f5ec8fa6e9",
+  "activeVersionId": "71542476-1857-4561-9fad-c4f5ec8fa6e9",
+  "versionCounter": 6,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-07-22T11:49:14.176Z",
+      "createdAt": "2026-07-22T11:49:14.176Z",
+      "role": "workflow:owner",
+      "workflowId": "jAZsVl8TDBv5OFWS",
+      "projectId": "CVOdAZQRphO6oJo5",
+      "project": {
+        "updatedAt": "2026-07-22T11:45:25.085Z",
+        "createdAt": "2026-07-22T11:40:28.422Z",
+        "id": "CVOdAZQRphO6oJo5",
+        "name": "NICOLAS PIERRE <n1c0laspi201014@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "6c019ce0-a1dc-4fc7-b601-b4627b42c4ef"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

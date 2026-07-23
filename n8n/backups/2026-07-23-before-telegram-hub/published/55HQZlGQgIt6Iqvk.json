@@ -1,0 +1,259 @@
+{
+  "updatedAt": "2026-07-22T12:57:23.000Z",
+  "createdAt": "2026-07-22T11:49:14.166Z",
+  "id": "55HQZlGQgIt6Iqvk",
+  "name": "PaperTrade AI - Market Close Report",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 16 * * 1-5"
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "US market close - 4 PM New York",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/due-close-reports'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "due",
+      "name": "Get due close reports",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split",
+      "name": "Loop users",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/report-data'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ user_id: $json.user_id, type: 'market-close-report' }) }}",
+        "options": {}
+      },
+      "id": "data",
+      "name": "Build close report",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$('Loop users').item.json.chat_id}}",
+        "text": "={{$json.data.message}}",
+        "additionalFields": {}
+      },
+      "id": "telegram",
+      "name": "Send close report",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        880,
+        0
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "e80a0669-139f-42aa-bdf4-2f4160c41871",
+          "name": "PaperTrade Telegram"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/log'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ workflow_name: 'market-close-report', user_id: $('Loop users').item.json.user_id, status: 'success', message: 'Weekday US market-close Telegram report sent', execution_key: $('Loop users').item.json.report_date + '-' + $('Loop users').item.json.user_id }) }}",
+        "options": {}
+      },
+      "id": "log",
+      "name": "Log delivery",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "US market close - 4 PM New York": {
+      "main": [
+        [
+          {
+            "node": "Get due close reports",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get due close reports": {
+      "main": [
+        [
+          {
+            "node": "Loop users",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop users": {
+      "main": [
+        [
+          {
+            "node": "Build close report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build close report": {
+      "main": [
+        [
+          {
+            "node": "Send close report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send close report": {
+      "main": [
+        [
+          {
+            "node": "Log delivery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "timezone": "America/New_York"
+  },
+  "staticData": {
+    "node:Every 15 minutes": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    },
+    "node:US market close - 4 PM New York": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "7044a680-b9c8-4d0e-ab40-4cb663af725a",
+  "activeVersionId": "7044a680-b9c8-4d0e-ab40-4cb663af725a",
+  "versionCounter": 5,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-07-22T11:49:14.169Z",
+      "createdAt": "2026-07-22T11:49:14.169Z",
+      "role": "workflow:owner",
+      "workflowId": "55HQZlGQgIt6Iqvk",
+      "projectId": "CVOdAZQRphO6oJo5",
+      "project": {
+        "updatedAt": "2026-07-22T11:45:25.085Z",
+        "createdAt": "2026-07-22T11:40:28.422Z",
+        "id": "CVOdAZQRphO6oJo5",
+        "name": "NICOLAS PIERRE <n1c0laspi201014@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "6c019ce0-a1dc-4fc7-b601-b4627b42c4ef"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}

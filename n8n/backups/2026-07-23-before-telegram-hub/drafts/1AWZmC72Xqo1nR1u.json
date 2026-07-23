@@ -1,0 +1,332 @@
+{
+  "updatedAt": "2026-07-22T12:08:59.000Z",
+  "createdAt": "2026-07-22T11:49:14.157Z",
+  "id": "1AWZmC72Xqo1nR1u",
+  "name": "PaperTrade AI - Alert Monitor",
+  "description": null,
+  "active": true,
+  "isArchived": false,
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 5
+            }
+          ]
+        }
+      },
+      "id": "schedule",
+      "name": "Every 5 minutes",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/due-alert-rules'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "due",
+      "name": "Get due alert rules",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        220,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "split",
+      "name": "Loop rules",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        440,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/evaluate-alert'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ rule_id: $json.id }) }}",
+        "options": {}
+      },
+      "id": "evaluate",
+      "name": "Evaluate in PHP",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        660,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "triggered-is-true",
+              "leftValue": "={{$json.triggered}}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if",
+      "name": "Threshold crossed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "chatId": "={{$json.chat_id}}",
+        "text": "={{$json.message}}",
+        "additionalFields": {}
+      },
+      "id": "telegram",
+      "name": "Send Telegram alert",
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        1100,
+        -100
+      ],
+      "credentials": {
+        "telegramApi": {
+          "id": "e80a0669-139f-42aa-bdf4-2f4160c41871",
+          "name": "PaperTrade Telegram"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/telegram-result'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ event_id: $('Evaluate in PHP').item.json.event_id, success: true }) }}",
+        "options": {}
+      },
+      "id": "callback",
+      "name": "Save Telegram result",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        -100
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{$env.PAPERTRADE_INTERNAL_BASE_URL + '/api/internal/automation/telegram-result'}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "X-Internal-Api-Key",
+              "value": "={{$env.PAPERTRADE_INTERNAL_API_KEY}}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "application/json",
+        "body": "={{ JSON.stringify({ event_id: $('Evaluate in PHP').item.json.event_id, success: false, error: $json.error?.message || 'Telegram node failed' }) }}",
+        "options": {}
+      },
+      "id": "failure",
+      "name": "Save Telegram failure",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1320,
+        90
+      ]
+    }
+  ],
+  "connections": {
+    "Every 5 minutes": {
+      "main": [
+        [
+          {
+            "node": "Get due alert rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get due alert rules": {
+      "main": [
+        [
+          {
+            "node": "Loop rules",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop rules": {
+      "main": [
+        [
+          {
+            "node": "Evaluate in PHP",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Evaluate in PHP": {
+      "main": [
+        [
+          {
+            "node": "Threshold crossed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Threshold crossed?": {
+      "main": [
+        [
+          {
+            "node": "Send Telegram alert",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Send Telegram alert": {
+      "main": [
+        [
+          {
+            "node": "Save Telegram result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Save Telegram failure",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "staticData": {
+    "node:Every 5 minutes": {
+      "recurrenceRules": [
+        null
+      ],
+      "recurrenceRuleSignatures": [
+        null
+      ]
+    }
+  },
+  "meta": {
+    "templateCredsSetupCompleted": false
+  },
+  "nodeGroups": [],
+  "pinData": null,
+  "versionId": "3550ef61-3694-43e5-9e9f-5c0df3298271",
+  "activeVersionId": "3550ef61-3694-43e5-9e9f-5c0df3298271",
+  "versionCounter": 5,
+  "triggerCount": 1,
+  "sourceWorkflowId": null,
+  "tags": [],
+  "shared": [
+    {
+      "updatedAt": "2026-07-22T11:49:14.163Z",
+      "createdAt": "2026-07-22T11:49:14.163Z",
+      "role": "workflow:owner",
+      "workflowId": "1AWZmC72Xqo1nR1u",
+      "projectId": "CVOdAZQRphO6oJo5",
+      "project": {
+        "updatedAt": "2026-07-22T11:45:25.085Z",
+        "createdAt": "2026-07-22T11:40:28.422Z",
+        "id": "CVOdAZQRphO6oJo5",
+        "name": "NICOLAS PIERRE <n1c0laspi201014@gmail.com>",
+        "type": "personal",
+        "icon": null,
+        "description": null,
+        "customTelemetryTags": [],
+        "creatorId": "6c019ce0-a1dc-4fc7-b601-b4627b42c4ef"
+      }
+    }
+  ],
+  "versionMetadata": {
+    "name": null,
+    "description": null
+  }
+}
