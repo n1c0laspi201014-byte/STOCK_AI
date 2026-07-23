@@ -1,0 +1,19 @@
+{
+  "name": "school/papertrade-ai",
+  "description": "Educational paper-trading dashboard using real market data.",
+  "type": "project",
+  "license": "MIT",
+  "require": {
+    "php": ">=8.0",
+    "ext-curl": "*",
+    "ext-json": "*",
+    "ext-pdo": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "App\\": "app/"
+    },
+    "files": ["app/Support/Helpers.php"]
+  }
+}
+
